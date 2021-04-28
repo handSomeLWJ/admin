@@ -39,7 +39,10 @@
         <el-table-column label="状态">
           <!-- 作用域插槽  .row能获取userList的数据 -->
           <template #default="{ row }">
-            <el-switch v-model="row.mg_state"></el-switch>
+            <el-switch
+              v-model="row.mg_state"
+              @change="getChangeState(row)"
+            ></el-switch>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="170">
@@ -51,8 +54,18 @@
               icon="el-icon-edit"
               @click="editUser(row)"
             ></el-button>
-            <el-button type="danger" circle icon="el-icon-delete"></el-button>
-            <el-button type="warning" circle icon="el-icon-setting"></el-button>
+            <el-button
+              type="danger"
+              circle
+              icon="el-icon-delete"
+              @click="deleteUser(row)"
+            ></el-button>
+            <el-button
+              type="warning"
+              circle
+              icon="el-icon-setting"
+              @click="setRight(row)"
+            ></el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -70,16 +83,33 @@
         </el-pagination>
       </div>
     </el-card>
-    <user-dialog ref="refUserDialog"></user-dialog>
+    <!-- 添加/编辑用户弹框 -->
+    <user-dialog
+      ref="refUserDialog"
+      :currentEdit="currentEdit"
+      @clearCurrentEdit="clearCurrentEdit"
+    ></user-dialog>
+    <!-- 设置权限角色弹框 -->
+    <right-dialog
+      ref="refRightDialog"
+      :rolesList="rolesList"
+      :setUserInfo="setUserInfo"
+    ></right-dialog>
   </div>
 </template>
 
 <script>
-import UserDialog from "../../../UserDialog.vue";
-import { reqUsers } from "../../network/api";
+import UserDialog from "../users/userDialog/UserDialog";
+import {
+  reqUsers,
+  reqChangeState,
+  reqDeleteUser,
+  reqRolesList,
+} from "../../network/api";
+import RightDialog from "./rightDialog/RightDialog.vue";
 export default {
   name: "Users",
-  components: { UserDialog },
+  components: { UserDialog, RightDialog },
   props: {},
   data() {
     return {
@@ -88,6 +118,8 @@ export default {
       userList: [], //用列表的数据
       totalPage: 0, //用户列表总页数
       currentEdit: {}, //点击编辑按钮传信息到userDialog组件
+      rolesList: [], //角色列表，传到RightDialog弹框
+      setUserInfo: {}, //点击设置的那个用户信息，传到RightDialog弹框
     };
   },
   watch: {},
@@ -128,9 +160,53 @@ export default {
       this.currentEdit = row;
       this.$refs.refUserDialog.dialogFormVisible = true;
     },
+    /* 更改当前用户的信息，当点击了对话框的x或者取消的时候触发  clearCurrentEdit */
+    clearCurrentEdit() {
+      this.currentEdit = {};
+    },
+    /* 修改用户状态 用户Id和用户状态 */
+    async getChangeState(row) {
+      const { id: uId, mg_state: type } = row;
+      const { meta } = await reqChangeState(uId, type);
+      if (meta.status !== 200) return this.$message.error(meta.msg);
+      this.$message.success(meta.msg);
+    },
+    /* 点击删除 用户id 删除时提示一下 从新更新页面  回到第一页 */
+    async deleteUser(row) {
+      const result = await this.$confirm(
+        "此操作将永久删除该用户, 是否继续?",
+        "提示",
+        {
+          confirmButtonText: "确定",
+          cancelButtonText: "取消",
+          type: "warning",
+        }
+      ).catch((err) => {
+        console.log(err);
+      });
+      if (result !== "confirm") return;
+      const { id } = row;
+      const { meta } = await reqDeleteUser(id);
+      if (meta.status !== 200) return this.$message.error(meta.msg);
+      this.$message.success(meta.msg);
+      this.params.pagenum = 1;
+      this.getUsers();
+    },
+    /* 点击设置权限按钮 传递用户信息到弹框 弹出设置权限弹框 */
+    setRight(row) {
+      this.setUserInfo = row;
+      this.$refs.refRightDialog.dialogFormVisible = true;
+    },
+    /* 获取角色列表  一上来就获取角色列表  然后传递列表值到  RightDialog */
+    async getRolesList() {
+      const { meta, data } = await reqRolesList();
+      if (meta.status !== 200) return;
+      this.rolesList = data;
+    },
   },
   created() {
-    this.getUsers();
+    this.getUsers(); //用户列表
+    this.getRolesList(); //权限列表
   },
   mounted() {},
 };
