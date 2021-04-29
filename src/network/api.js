@@ -27,3 +27,21 @@ export const reqRolesList = () => request({ url: 'roles' })
 
 /* 分配用户角色 users/:id/role put id rid */
 export const reqAssignUsersRoles = (id, rid) => request({ url: `users/${id}/role`, method: 'put', data: { rid } })
+
+/*  删除角色指定权限  roles/:roleId/rights/:rightId  delete */
+export const reqDeleteRoles = (roleId, rightId) => request({ url: `roles/${roleId}/rights/${rightId}`, method: 'delete' })
+
+/* 编辑角色  roles/:id  put  */
+export const reqEditRoles = (id, data) => request({ url: `roles/${id}`, method: 'put', data })
+
+/* 添加角色 roles  post  */
+export const reqAddRoles = (data) => request({ url: `roles/`, method: 'post', data })
+
+/* 删除角色 roles/:id delete */
+export const reqDeleteRole = (id) => request({ url: `roles/${id}`, method: 'delete' })
+
+/* 所有权限列表  rights/:type get  */
+export const reqRightAll = (type) => request({ url: `rights/${type}`, })
+
+/* 分配权限 roles/:roleId/rights */
+export const reqRolesRights = (roleId, rids) => request({ url: `roles/${roleId}/rights`, method: 'post', data: { rids } })
