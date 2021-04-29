@@ -45,3 +45,6 @@ export const reqRightAll = (type) => request({ url: `rights/${type}`, })
 
 /* 分配权限 roles/:roleId/rights */
 export const reqRolesRights = (roleId, rids) => request({ url: `roles/${roleId}/rights`, method: 'post', data: { rids } })
+
+/* 基于时间统计的折线图  reports/type/1 get */
+export const reqReports = () => request({ url: 'reports/type/1' })
